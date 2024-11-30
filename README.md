@@ -23,8 +23,12 @@ GOOGLE_API_KEY=your_google_api_key
 5. Run the application by executing ```python new_app [file_name]```
    - change the file_name with the pdf name that you want to work on.
 6. After processing the PDF, the application will enter an interactive mode where you can ask questions. 
-   
-   
+   - the answers will come in command line like this
+   ![Example Image](./example.png)
+   - there will be on-screen commands
+   - if the question does not have any answer from the provided pdf then the response will be blank.
+
+
 ## Code Structure
 * ```app.py```: The main Streamlit application.
 * ```get_pdf_text```: A function to extract text from the uploaded PDF files.
