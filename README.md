@@ -29,10 +29,7 @@ GOOGLE_API_KEY=your_google_api_key
    - if the question does not have any answer from the provided pdf then the response will be blank.
    - type 'exit' to quit the program
 
-## Code Structure
-* ```neww_app.py```: The main python application.
-Certainly! I'll explain each function in the code in a way similar to the structured points you provided earlier:
-
+## Code Structure of the main file
 ### 1. `get_pdf_text`: Extract Text from PDF Files
 - **Purpose**: This function extracts text from the uploaded PDF files.
 - **How It Works**: It takes a list of PDF file paths, reads each file using `PyPDF2`, and concatenates all the text from each page. The resulting string contains the complete content from all PDFs combined.
@@ -56,5 +53,3 @@ Certainly! I'll explain each function in the code in a way similar to the struct
 ### 6. `main`: Set Up the Command-Line Application and Run the User Interaction Loop
 - **Purpose**: This is the main function that sets up the CLI program and runs the user input process.
 - **How It Works**: It uses `argparse` to parse command-line arguments (the list of PDF file paths). After extracting text, splitting it into chunks, and storing the vectors, it enters a loop where the user can ask questions about the content of the processed PDF files. The loop will continue until the user types `'exit'`.
-
-This code lets the user ask detailed questions about the contents of one or more PDF files, and it responds based on the relevant text using embeddings and a conversational model from Google Generative AI. Let me know if you need more details on any part!
