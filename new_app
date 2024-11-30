@@ -1,0 +1,102 @@
+import os
+import argparse
+from dotenv import load_dotenv
+
+from PyPDF2 import PdfReader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_google_genai import (
+    GoogleGenerativeAIEmbeddings,
+    ChatGoogleGenerativeAI
+)
+from langchain.vectorstores import FAISS
+from langchain.chains.question_answering import load_qa_chain
+from langchain.prompts import PromptTemplate
+import google.generativeai as genai
+
+load_dotenv()
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+
+
+def get_pdf_text(pdf_docs):
+    """Extract text from PDF documents."""
+    text = ""
+    for pdf_path in pdf_docs:
+        pdf_reader = PdfReader(pdf_path)
+        for page in pdf_reader.pages:
+            text += page.extract_text()
+    return text
+
+
+def get_text_chunks(text):
+    """Split text into smaller chunks for processing."""
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=10000, chunk_overlap=1000
+    )
+    return text_splitter.split_text(text)
+
+
+def get_vector_store(text_chunks):
+    """Create a vector store from text chunks."""
+    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+    vector_store = FAISS.from_texts(text_chunks, embedding=embeddings)
+    vector_store.save_local("faisss_index")
+    return vector_store
+
+
+def get_conversational_chain():
+    """Create a conversational chain for question answering."""
+    prompt_template = """
+Answer the question as detailed as possible from the provided context, make sure to provide all the details. If the answer is not available in the context, just say, "answer is not available in the context", don't provide the wrong answer.
+
+Context:
+{context}
+
+Question:
+{question}
+
+Answer:
+"""
+    model = ChatGoogleGenerativeAI(model="gemini-pro", temperature=0.3)
+    prompt = PromptTemplate(
+        template=prompt_template, input_variables=["context", "question"]
+    )
+    return load_qa_chain(model, chain_type="stuff", prompt=prompt)
+
+
+def process_user_input(user_question, vector_store):
+    """Process user input and generate a response."""
+    docs = vector_store.similarity_search(user_question)
+    chain = get_conversational_chain()
+    response = chain(
+        {"input_documents": docs, "question": user_question}, return_only_outputs=True
+    )
+    return response["output_text"]
+
+
+def main():
+    """Main function for the CLI program."""
+    parser = argparse.ArgumentParser(
+        description="Chat with PDF files using Gemini AI"
+    )
+    parser.add_argument(
+        "pdf_files", nargs="+", help="Paths to the PDF files to be processed"
+    )
+    args = parser.parse_args()
+
+    print("Processing PDF files...")
+    processed_pdf_text = get_pdf_text(args.pdf_files)
+    text_chunks = get_text_chunks(processed_pdf_text)
+    vector_store = get_vector_store(text_chunks)
+    print("PDFs processed successfully!")
+
+    while True:
+        user_question = input("\nAsk a question (or type 'exit' to quit): ")
+        if user_question.strip().lower() == "exit":
+            print("Goodbye!")
+            break
+        response = process_user_input(user_question, vector_store)
+        print("\nReply:", response)
+
+
+if __name__ == "__main__":
+    main()
